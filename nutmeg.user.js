@@ -13,48 +13,56 @@
 
 installAnnualisedRate();
 
+// Converts an array of arrays in [key, value] form, to a dictionary
+function dataArrayToDictionary(dataArray) {
+    var dictionary = {};
+    for(i = 0; i < dataArray.length; i++) {
+        var value = dataArray[i];
+        dictionary[value[0]] = value[1];
+    }
+    return dictionary;
+}
+
 function calculateAnnualisedRateSeries(data) {
-	var fundValue = data.performance;
+	var fundValues = data.performance;
 	var contributions = data.contributions;
 
-	// Must be the same length, otherwise we can't do our maths
-	if (fundValue.length != contributions.length) {
-		throw "Unequal array lengths!";
+    // This will contain all of the data points as an array of arrays in the form [date, fundValue, contributions]
+    var zippedData = [];
+    var contributionsDictionary = dataArrayToDictionary(contributions);
+    var lastDate = 0;
+	for (i = 0; i < fundValues.length; i++) {
+        fundValue = fundValues[i];
+        date = fundValue[0];
+        fundValueToday = fundValue[1];
+        contributionsToday = contributionsDictionary[date];
+
+		// Check it's the next day
+		if (lastDate !== 0 && date != lastDate + 86400000) {
+            // If it isn't the next day, let's start our array again
+            // This must be consecutive days for the maths to work
+			zippedData = [];
+		}
+		lastDate = date;
+
+        zippedData.push([date, fundValueToday, contributionsToday]);
 	}
 
-	var lastDate = 0;
 	var summedContribution = 0;
 	var dataRows = [];
 
-	for (var i = 0; i < fundValue.length; i++) {
-		var valueData = fundValue[i];
-		var contributionData = contributions[i];
+	for (i = 0; i < zippedData.length; i++) {
+		thisData = zippedData[i];
 
-		// Check dates are equal first
-		var valueDate = valueData[0];
-		var contributionDate = contributionData[0];
-		if (valueDate != contributionDate) {
-			throw "Dates were not equal! " + valueDate + " != " + contributionDate;
-		}
+        date = thisData[0];
+		fundValueToday = thisData[1];
+		contributionsToday = thisData[2];
 
-		// Check it's the next day
-		if (lastDate !== 0 && valueDate != lastDate + 86400000) {
-			throw "Next date is not last date plus 1 day! Next date = " + valueDate + ", last date = " + lastDate;
-		}
-		lastDate = valueDate;
+		summedContribution += contributionsToday;
 
-		var value = valueData[1];
-		var contribution = contributionData[1];
-		summedContribution += contribution;
+		dailyPct = 100 * (Math.pow((1 + (fundValueToday - contributionsToday) / summedContribution), 365.25) - 1);
 
-		var dailyPct = 100 * (Math.pow((1 + (value - contribution) / summedContribution), 365.25) - 1);
-
-		var thisDayRow = [
-			valueDate,
-			dailyPct
-		];
-
-		dataRows.push(thisDayRow);
+		dataRows.push([date, dailyPct]);
 	}
 
 	return dataRows;
