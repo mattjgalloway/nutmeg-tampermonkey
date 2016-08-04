@@ -5,6 +5,7 @@
 // @description  Augment Nutmeg portfolio page
 // @author       Matt Galloway
 // @match        https://app.nutmeg.com/client/portfolio
+// @match        https://app.nutmeg.com/client/portfolio/dig_deeper
 // @updateURL    https://raw.githubusercontent.com/mattjgalloway/nutmeg-tampermonkey/master/nutmeg.user.js
 // @downloadURL  https://raw.githubusercontent.com/mattjgalloway/nutmeg-tampermonkey/master/nutmeg.user.js
 // @grant        none
