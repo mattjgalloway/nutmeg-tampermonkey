@@ -55,11 +55,19 @@ function calculateAnnualisedRateSeries(data) {
 	}
 
 	var summedContribution = 0;
-    var summedContributionMinusYear = 0;
-    var summedContributionYTD = 0;
 	var dataRows = [];
-    var minusYearPct = 0;
-    var ytdPct = 0;
+
+	var hitMinusYearDate = false;
+	var summedContributionMinusYear = 0;
+	var minusYearPct = 0;
+	var minusYearFundValueStart = 0;
+	var minusYearContributionsTodayStart = 0;
+
+	var hitYTDDate = false;
+	var summedContributionYTD = 0;
+	var ytdPct = 0;
+	var ytdFundValueStart = 0;
+	var ytdContributionsTodayStart = 0;
 
 	for (i = 0; i < zippedData.length; i++) {
 		thisData = zippedData[i];
@@ -71,12 +79,22 @@ function calculateAnnualisedRateSeries(data) {
 		summedContribution += contributionsToday;
 
         if (date > nowMinusYear) {
+            if (!hitMinusYearDate) {
+                minusYearFundValueStart = fundValueToday;
+                minusYearContributionsTodayStart = contributionsToday;
+                hitMinusYearDate = true;
+            }
             summedContributionMinusYear += contributionsToday;
-            minusYearPct = 100 * (Math.pow((1 + (fundValueToday - contributionsToday) / summedContributionMinusYear), 365.25) - 1);
+            minusYearPct = 100 * (Math.pow((1 + ((fundValueToday - minusYearFundValueStart) - (contributionsToday - minusYearContributionsTodayStart)) / summedContributionMinusYear), 365.25) - 1);
         }
         if (date > nowStartOfYear) {
+            if (!hitYTDDate) {
+                ytdFundValueStart = fundValueToday;
+                ytdContributionsTodayStart = contributionsToday;
+                hitYTDDate = true;
+            }
             summedContributionYTD += contributionsToday;
-            ytdPct = 100 * (Math.pow((1 + (fundValueToday - contributionsToday) / summedContributionYTD), 365.25) - 1);
+            ytdPct = 100 * (Math.pow((1 + ((fundValueToday - ytdFundValueStart) - (contributionsToday - ytdContributionsTodayStart)) / summedContributionYTD), 365.25) - 1);
         }
 
 		dailyPct = 100 * (Math.pow((1 + (fundValueToday - contributionsToday) / summedContribution), 365.25) - 1);
