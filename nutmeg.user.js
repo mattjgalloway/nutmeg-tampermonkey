@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Nutmeg
 // @namespace    http://www.galloway.me.uk/
-// @version      0.1
+// @version      0.2
 // @description  Augment Nutmeg portfolio page
 // @author       Matt Galloway
 // @match        https://app.nutmeg.com/client/portfolio
@@ -27,6 +27,12 @@ function calculateAnnualisedRateSeries(data) {
 	var fundValues = data.performance;
 	var contributions = data.contributions;
 
+    // For calculating YTD and past year rates
+    var now = new Date();
+    var nowMinusYear = new Date(now);
+    nowMinusYear.setFullYear(nowMinusYear.getFullYear() - 1);
+    var nowStartOfYear = new Date(now.getFullYear(), 0, 1);
+
     // This will contain all of the data points as an array of arrays in the form [date, fundValue, contributions]
     var zippedData = [];
     var contributionsDictionary = dataArrayToDictionary(contributions);
@@ -49,7 +55,11 @@ function calculateAnnualisedRateSeries(data) {
 	}
 
 	var summedContribution = 0;
+    var summedContributionMinusYear = 0;
+    var summedContributionYTD = 0;
 	var dataRows = [];
+    var minusYearPct = 0;
+    var ytdPct = 0;
 
 	for (i = 0; i < zippedData.length; i++) {
 		thisData = zippedData[i];
@@ -60,12 +70,21 @@ function calculateAnnualisedRateSeries(data) {
 
 		summedContribution += contributionsToday;
 
+        if (date > nowMinusYear) {
+            summedContributionMinusYear += contributionsToday;
+            minusYearPct = 100 * (Math.pow((1 + (fundValueToday - contributionsToday) / summedContributionMinusYear), 365.25) - 1);
+        }
+        if (date > nowStartOfYear) {
+            summedContributionYTD += contributionsToday;
+            ytdPct = 100 * (Math.pow((1 + (fundValueToday - contributionsToday) / summedContributionYTD), 365.25) - 1);
+        }
+
 		dailyPct = 100 * (Math.pow((1 + (fundValueToday - contributionsToday) / summedContribution), 365.25) - 1);
 
 		dataRows.push([date, dailyPct]);
 	}
 
-	return dataRows;
+	return [dataRows, minusYearPct, ytdPct];
 }
 
 function installAnnualisedRate() {
@@ -75,7 +94,10 @@ function installAnnualisedRate() {
 	var newMethod = function(a, b, c){
 		console.log('starting');
 
-		var dataRows = calculateAnnualisedRateSeries(b);
+		var data = calculateAnnualisedRateSeries(b);
+		var dataRows = data[0];
+		var minusYearPct = data[1];
+		var ytdPct = data[2];
 
 		console.log('finished with data:');
 		console.log(dataRows);
@@ -113,8 +135,14 @@ function installAnnualisedRate() {
 		var chart = $('#' + a)[0];
 		var closestChartData = chart.closest('[id^="charts-data-"]');
 
-		var latestAnnualisedRate = "Latest annualised rate = " + dataRows[dataRows.length-1][1].toFixed(2) + "%";
-		var textNode = document.createTextNode(latestAnnualisedRate);
+		var latestAnnualisedRate = "";
+		latestAnnualisedRate += "Latest annualised rate = " + dataRows[dataRows.length-1][1].toFixed(2) + "%";
+		latestAnnualisedRate += "<br/>";
+		latestAnnualisedRate += "-1 year annualised rate = " + minusYearPct.toFixed(2) + "%";
+		latestAnnualisedRate += "<br/>";
+		latestAnnualisedRate += "YTD annualised rate = " + ytdPct.toFixed(2) + "%";
+		var textNode = document.createElement("p");
+		textNode.innerHTML = latestAnnualisedRate;
 		closestChartData.parentNode.insertBefore(textNode, closestChartData);
 
 		return output;
