@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Nutmeg
 // @namespace    http://www.galloway.me.uk/
-// @version      0.2
+// @version      0.2.1
 // @description  Augment Nutmeg portfolio page
 // @author       Matt Galloway
 // @match        https://app.nutmeg.com/client/portfolio
